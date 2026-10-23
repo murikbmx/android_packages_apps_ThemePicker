@@ -165,6 +165,10 @@
         [CHAR LIMIT=15] -->
     <string name="app_icons_style_minimal">Minimal</string>
 
+    <!-- Label for an icon style option that applies a monochrome theme to app icons everywhere
+        (home screen, app drawer and recents) when selected. [CHAR LIMIT=20] -->
+    <string name="app_icons_style_full_minimal">Full minimal</string>
+
     <!-- Title of a tab to change the app icon shape [CHAR LIMIT=15] -->
     <string name="app_icons_shape">Shape</string>
 
