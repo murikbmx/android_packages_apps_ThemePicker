@@ -96,10 +96,7 @@ constructor(@ApplicationContext private val context: Context) : IconStyleViewUti
     ): DisposableHandle? {
         var disposableHandle: DisposableHandle? = null
         // If the icon is a themed icon, bind its foreground and background color
-        if (
-            iconStyleModel.iconStyle == ThemePickerIconStyle.MONOCHROME ||
-                iconStyleModel.iconStyle == ThemePickerIconStyle.FULL_MONOCHROME
-        ) {
+        if (iconStyleModel.iconStyle == ThemePickerIconStyle.MONOCHROME) {
             ((icon as? Icon.Loaded)?.drawable as? ShapeTileDrawable)?.let {
                 disposableHandle =
                     ShapeIconViewBinder.bindPreviewIconColor(
@@ -122,9 +119,7 @@ constructor(@ApplicationContext private val context: Context) : IconStyleViewUti
                     context = context,
                     path = shapePath,
                     icon = appIconDrawable as? AdaptiveIconDrawable,
-                    isThemed =
-                        iconStyleModel?.iconStyle == ThemePickerIconStyle.MONOCHROME ||
-                            iconStyleModel?.iconStyle == ThemePickerIconStyle.FULL_MONOCHROME,
+                    isThemed = iconStyleModel?.iconStyle == ThemePickerIconStyle.MONOCHROME,
                 ),
             contentDescription = null,
         )

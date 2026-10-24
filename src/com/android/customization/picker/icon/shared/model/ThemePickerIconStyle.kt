@@ -27,5 +27,4 @@ enum class ThemePickerIconStyle(
 ) : IconStyle {
     DEFAULT(R.string.app_icons_style_default, APP_ICON_STYLE_UNSPECIFIED),
     MONOCHROME(R.string.app_icons_style_minimal, APP_ICON_STYLE_THEMED),
-    FULL_MONOCHROME(R.string.app_icons_style_full_minimal, APP_ICON_STYLE_THEMED),
 }

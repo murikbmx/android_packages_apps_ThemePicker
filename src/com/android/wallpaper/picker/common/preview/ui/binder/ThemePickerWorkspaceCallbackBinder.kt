@@ -322,8 +322,7 @@ constructor(
                                             Bundle().apply {
                                                 putBoolean(
                                                     KEY_BOOLEAN_VALUE,
-                                                    it == ThemePickerIconStyle.MONOCHROME ||
-                                                        it == ThemePickerIconStyle.FULL_MONOCHROME,
+                                                    it == ThemePickerIconStyle.MONOCHROME,
                                                 )
                                             },
                                         )

@@ -45,7 +45,6 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
@@ -125,11 +124,7 @@ constructor(
             ThemePickerIconStyle.entries
                 .toList()
                 // Filter entries if themed icon is not available
-                .filter {
-                    isThemedIconAvailable ||
-                        (it != ThemePickerIconStyle.MONOCHROME &&
-                            it != ThemePickerIconStyle.FULL_MONOCHROME)
-                }
+                .filter { isThemedIconAvailable || it != ThemePickerIconStyle.MONOCHROME }
                 .map { it.toIconStyleModel() }
         }
 
@@ -137,63 +132,13 @@ constructor(
         return IconStyleModel(iconStyle = this, name = Text.Resource(nameResId))
     }
 
-    private val isAllThemedActivated: Flow<Boolean> =
-        previewUtilsFlow
-            .flatMapLatest {
-                callbackFlow {
-                    var disposableHandle: DisposableHandle? = null
-                    if (it != null) {
-                        val contentObserver =
-                            object : ContentObserver(null) {
-                                override fun onChange(selfChange: Boolean) {
-                                    trySend(getAllThemedEnabled(it.getUri(ICON_THEMED_ALL)))
-                                }
-                            }
-                        contentResolver.registerContentObserver(
-                            it.getUri(ICON_THEMED_ALL),
-                            /* notifyForDescendants= */ true,
-                            contentObserver,
-                        )
-                        trySend(getAllThemedEnabled(it.getUri(ICON_THEMED_ALL)))
-                        disposableHandle = DisposableHandle {
-                            contentResolver.unregisterContentObserver(contentObserver)
-                        }
-                    }
-                    awaitClose { disposableHandle?.dispose() }
-                }
-            }
-            .stateIn(
-                scope = backgroundScope,
-                started = SharingStarted.WhileSubscribed(),
-                initialValue = false,
-            )
-
     override val selectedIconStyle =
-        combine(isThemedIconActivated, isAllThemedActivated) { themed, all ->
-            when {
-                all -> ThemePickerIconStyle.FULL_MONOCHROME
-                themed -> ThemePickerIconStyle.MONOCHROME
-                else -> ThemePickerIconStyle.DEFAULT
+        isThemedIconActivated.map {
+            when (it) {
+                true -> ThemePickerIconStyle.MONOCHROME
+                false -> ThemePickerIconStyle.DEFAULT
             }
         }
-
-    private fun getAllThemedEnabled(uri: Uri): Boolean {
-        var isEnabled = false
-        contentResolver
-            .query(
-                uri,
-                /* projection= */ null,
-                /* selection= */ null,
-                /* selectionArgs= */ null,
-                /* sortOrder= */ null,
-            )
-            ?.use {
-                if (it.moveToNext()) {
-                    isEnabled = (it.getInt(it.getColumnIndex(COL_ICON_THEMED_VALUE)) == ENABLED)
-                }
-            }
-        return isEnabled
-    }
 
     private fun getThemedIconEnabled(uri: Uri): Boolean {
         val cursor =
@@ -252,15 +197,8 @@ constructor(
 
     override suspend fun setIconStyle(iconStyle: IconStyle): Boolean {
         previewUtilsFlow.first()?.let {
-            // Monochrome (home) is on for both the "Minimal" and "Full minimal" styles.
-            val themed =
-                iconStyle == ThemePickerIconStyle.MONOCHROME ||
-                    iconStyle == ThemePickerIconStyle.FULL_MONOCHROME
-            // "Full minimal" additionally themes the app drawer and recents.
-            val all = iconStyle == ThemePickerIconStyle.FULL_MONOCHROME
-
             val values = ContentValues()
-            values.put(COL_ICON_THEMED_VALUE, themed)
+            values.put(COL_ICON_THEMED_VALUE, iconStyle == ThemePickerIconStyle.MONOCHROME)
             val rowsUpdated =
                 contentResolver.update(
                     it.getUri(ICON_THEMED),
@@ -268,15 +206,6 @@ constructor(
                     /* where= */ null,
                     /* selectionArgs= */ null,
                 )
-
-            val allValues = ContentValues()
-            allValues.put(COL_ICON_THEMED_VALUE, all)
-            contentResolver.update(
-                it.getUri(ICON_THEMED_ALL),
-                allValues,
-                /* where= */ null,
-                /* selectionArgs= */ null,
-            )
             return rowsUpdated > 0
         }
         return false
@@ -342,8 +271,6 @@ constructor(
     companion object {
         const val ICON_THEMED = "icon_themed"
         const val SET_ICON_THEMED = "set_icon_themed"
-        // "Full minimal": theme the app drawer and recents too, not just the home screen.
-        const val ICON_THEMED_ALL = "icon_themed_all"
         const val COL_ICON_THEMED_VALUE = "boolean_value"
         // String for building uri when querying and updating the boolean to hide the app names
         private const val HIDE_APP_LABELS = "workspace_items_label_hidden"
